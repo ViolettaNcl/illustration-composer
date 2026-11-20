@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Конструктор иллюстраций</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%237864D7'/%3E%3Cpath d='M8 19l8-4.6 8 4.6-8 4.6z' fill='%23F9ECB0' stroke='%23181817' stroke-width='1.5'/%3E%3Cpath d='M8 13l8-4.6 8 4.6-8 4.6z' fill='%23D7CDF5' stroke='%23181817' stroke-width='1.5'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <header class="top">
+      <div class="brand">
+        <span class="logo" aria-hidden="true"></span>
+        <div>
+          <strong>Конструктор иллюстраций</strong>
+          <small>20 исходных векторных объектов · без генерации новых</small>
+        </div>
+      </div>
+      <div class="top-actions">
+        <button class="ghost icon" id="undo" title="Отменить (Ctrl+Z)" aria-label="Отменить">↶</button>
+        <button class="ghost icon" id="redo" title="Повторить (Ctrl+Shift+Z)" aria-label="Повторить">↷</button>
+        <button class="ghost" id="clear">Очистить</button>
+        <button class="primary" id="export">Скачать SVG</button>
+      </div>
+    </header>
+
+    <main class="app">
+      <aside class="panel left">
+        <section>
+          <h2>Собрать автоматически</h2>
+          <div class="seg" role="tablist" id="mode">
+            <button role="tab" data-mode="metaphor" aria-selected="true">По смыслу</button>
+            <button role="tab" data-mode="names" aria-selected="false">По названиям</button>
+          </div>
+          <label class="field">
+            <span id="prompt-label">Метафора или заголовок</span>
+            <textarea id="prompt" rows="3" placeholder="Например: Кэшбэк за каждую покупку"></textarea>
+          </label>
+          <div class="chips" id="examples"></div>
+          <div class="row">
+            <label class="field">
+              <span>Композиция</span>
+              <select id="style"></select>
+            </label>
+            <label class="field" id="bg-field">
+              <span>Фоновые объекты</span>
+              <select id="bgmode">
+                <option value="auto">Авто</option>
+                <option value="yes">Добавить</option>
+                <option value="none">Без фоновых</option>
+              </select>
+            </label>
+          </div>
+          <div class="row">
+            <button class="primary grow" id="build">Собрать</button>
+            <button class="ghost" id="reroll" title="Та же сцена, другая раскладка">Другой вариант</button>
+          </div>
+          <p class="note" id="explain" aria-live="polite"></p>
+          <div class="variants" id="variants" aria-label="Варианты раскладки"></div>
+          <details class="ai">
+            <summary>ИИ-анализ метафор <span class="badge" id="ai-status">выкл.</span></summary>
+            <p class="note">Без ключа работает офлайн-словарь смыслов. С ключом Anthropic метафору разбирает Claude: он только выбирает объекты из каталога, графику не создаёт. Ключ хранится только в этом браузере.</p>
+            <div class="row">
+              <input type="password" id="ai-key" placeholder="sk-ant-…" autocomplete="off" />
+              <button class="ghost" id="ai-save">Сохранить</button>
+            </div>
+          </details>
+        </section>
+
+        <section>
+          <div class="section-head">
+            <h2>Библиотека</h2>
+            <label class="link">Загрузить SVG<input type="file" id="upload-svg" accept=".svg,image/svg+xml" multiple hidden /></label>
+          </div>
+          <p class="note">Нажмите «+», чтобы добавить объект на холст. Варианты подгружаются под выбранный размер L/S.</p>
+          <div class="library" id="library"></div>
+        </section>
+      </aside>
+
+      <section class="stage">
+        <div class="selbar" id="selbar" hidden>
+          <span class="sel-name" id="sel-name"></span>
+          <button class="ghost sm" data-act="kind" title="Главный ↔ фоновый">Главный/фон</button>
+          <button class="ghost sm icon" data-act="rotl" title="Повернуть −15°">⟲</button>
+          <button class="ghost sm icon" data-act="rotr" title="Повернуть +15°">⟳</button>
+          <button class="ghost sm" data-act="rot0" title="Сбросить поворот">0°</button>
+          <button class="ghost sm icon" data-act="down" title="Ниже на слой ([)">▼</button>
+          <button class="ghost sm icon" data-act="up" title="Выше на слой (])">▲</button>
+          <button class="ghost sm" data-act="dup" title="Дублировать (Ctrl+D)">Дублировать</button>
+          <button class="ghost sm danger" data-act="del" title="Удалить (Delete)">Удалить</button>
+        </div>
+        <div class="canvas-wrap" id="canvas-wrap">
+          <svg id="canvas" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Холст композиции"></svg>
+          <div class="empty" id="empty">
+            <p><strong>Холст пуст.</strong> Введите метафору слева и нажмите «Собрать» или добавьте объекты из библиотеки.</p>
+          </div>
+        </div>
+        <p class="hint">Перетаскивайте объекты мышью. Кружок над рамкой поворачивает объект (с Shift — шаг 15°). Стрелки двигают, Delete удаляет, Ctrl+D дублирует, [ ] меняют слой.</p>
+      </section>
+
+      <aside class="panel right">
+        <section>
+          <h2>Формат</h2>
+          <div class="formats" id="formats"></div>
+          <div class="row size-row">
+            <label class="field"><span>Ширина</span><input type="number" id="fw" min="200" max="6000" step="10" /></label>
+            <span class="x">×</span>
+            <label class="field"><span>Высота</span><input type="number" id="fh" min="200" max="6000" step="10" /></label>
+            <button class="ghost" id="fapply">OK</button>
+          </div>
+          <p class="note">При смене формата композиция пересобирается под новые пропорции.</p>
+        </section>
+
+        <section>
+          <h2>Размер иллюстрации</h2>
+          <div class="seg" id="size">
+            <button data-size="L" aria-selected="true">L — детально</button>
+            <button data-size="S" aria-selected="false">S — упрощённо</button>
+          </div>
+        </section>
+
+        <section>
+          <div class="section-head">
+            <h2>Цветовая схема</h2>
+            <label class="link">Загрузить<input type="file" id="upload-palette" accept=".json,.svg,.txt,.css" hidden /></label>
+          </div>
+          <div class="schemes" id="schemes"></div>
+          <details class="new-scheme">
+            <summary>Создать свою схему</summary>
+            <div class="role-grid" id="role-grid"></div>
+            <div class="row">
+              <input type="text" id="scheme-name" placeholder="Название схемы" />
+              <button class="ghost" id="scheme-save">Добавить</button>
+            </div>
+          </details>
+          <p class="check" id="rules"></p>
+        </section>
+
+        <section>
+          <h2>Слои</h2>
+          <ol class="layers" id="layers"></ol>
+        </section>
+
+        <section>
+          <h2>Экспорт</h2>
+          <div class="col">
+            <button class="primary" id="export2">Скачать SVG</button>
+            <button class="ghost" id="copy">Скопировать SVG</button>
+            <div class="row">
+              <button class="ghost grow" id="save-json">Сохранить сцену</button>
+              <label class="ghost btn grow">Открыть сцену<input type="file" id="open-json" accept=".json" hidden /></label>
+            </div>
+          </div>
+          <p class="note">SVG остаётся векторным: каждый объект — отдельная группа &lt;g&gt; с исходными контурами. Файл открывается в Figma и Illustrator.</p>
+        </section>
+      </aside>
+    </main>
+    <div class="toast" id="toast" role="status" hidden></div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
