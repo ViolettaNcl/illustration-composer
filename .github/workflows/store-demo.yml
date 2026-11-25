@@ -1,0 +1,31 @@
+name: Store demo recording
+on:
+  pull_request:
+    types: [opened, reopened]
+    branches: [main]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  save:
+    if: github.head_ref == 'docs-video-demo' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: docs-video-demo
+      - name: Download verified recording
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 45698465542 --repo "$GITHUB_REPOSITORY" --name browser-demo --dir "$RUNNER_TEMP/demo"
+          mkdir -p docs/media
+          source_file=$(find "$RUNNER_TEMP/demo" -type f -name '*.webm' -print -quit)
+          test -n "$source_file"
+          ffmpeg -hide_banner -loglevel error -y -i "$source_file" -c:v libx264 -preset medium -crf 20 -pix_fmt yuv420p -movflags +faststart -an docs/media/illustration-composer-demo.mp4
+          ffprobe -v error -show_entries format=duration,size -of default=noprint_wrappers=1 docs/media/illustration-composer-demo.mp4
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/media/illustration-composer-demo.mp4
+          git commit -m "Add recorded application demonstration"
+          git push origin HEAD:docs-video-demo
