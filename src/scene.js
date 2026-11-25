@@ -43,7 +43,7 @@ export async function exportSVG(scene, lib, palettes) {
   }
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${scene.W}" height="${scene.H}" viewBox="0 0 ${scene.W} ${scene.H}" fill="none">\n` +
-    `<title>Illustration · ${scene.W}×${scene.H} · size ${scene.size} · ${scheme.title}</title>\n` +
+    `<title>Illustration · ${scene.W}×${scene.H} · size ${scene.size} · ${escapeXML(scheme.title)}</title>\n` +
     `<defs><clipPath id="canvas"><rect width="${scene.W}" height="${scene.H}"/></clipPath></defs>\n` +
     `<rect id="background" width="${scene.W}" height="${scene.H}" fill="${bg}"/>\n` +
     `<g id="composition" clip-path="url(#canvas)">\n${groups.join('\n')}\n</g>\n</svg>\n`
@@ -62,4 +62,8 @@ export function download(name, text, type = 'image/svg+xml') {
 function r(v, d = 2) {
   const p = 10 ** d;
   return Math.round(v * p) / p;
+}
+
+function escapeXML(value) {
+  return String(value).replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]);
 }

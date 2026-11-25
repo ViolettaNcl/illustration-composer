@@ -12,7 +12,7 @@
         <span class="logo" aria-hidden="true"></span>
         <div>
           <strong>Конструктор иллюстраций</strong>
-          <small>20 исходных векторных объектов · без генерации новых</small>
+          <small>10 объектов · 40 SVG-компонентов</small>
         </div>
       </div>
       <div class="top-actions">
@@ -58,10 +58,10 @@
           <div class="variants" id="variants" aria-label="Варианты раскладки"></div>
           <details class="ai">
             <summary>ИИ-анализ метафор <span class="badge" id="ai-status">выкл.</span></summary>
-            <p class="note">Без ключа работает офлайн-словарь смыслов. С ключом Anthropic метафору разбирает Claude: он только выбирает объекты из каталога, графику не создаёт. Ключ хранится только в этом браузере.</p>
+            <p class="note">Без ключа работает офлайн-словарь смыслов. С ключом Anthropic метафору разбирает Claude: он только выбирает объекты из каталога, графику не создаёт. Ключ хранится только в памяти вкладки до перезагрузки. Запрос отправляется напрямую в Anthropic; для публичной демонстрации ключ не нужен.</p>
             <div class="row">
               <input type="password" id="ai-key" placeholder="sk-ant-…" autocomplete="off" />
-              <button class="ghost" id="ai-save">Сохранить</button>
+              <button class="ghost" id="ai-save">Применить</button>
             </div>
           </details>
         </section>

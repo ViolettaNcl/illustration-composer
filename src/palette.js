@@ -129,7 +129,8 @@ function fromSvgSwatches(name, svg) {
 
 function loadCustom() {
   try {
-    return JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
+    const saved = JSON.parse(localStorage.getItem(STORE_KEY) || '[]');
+    return Array.isArray(saved) ? saved.flatMap(s => { try { return [{ ...validateScheme(s), custom: true }]; } catch { return []; } }) : [];
   } catch {
     return [];
   }
