@@ -183,6 +183,7 @@ async function renderLibrary() {
     const card = document.createElement('div');
     card.className = 'card';
     const comp = await lib.component(o.id, 'main', scene.size);
+    if (key !== libKey) return;
     const [x, y, w, h] = comp.vb;
     card.innerHTML = `<div class="thumb" style="background:${palettes.get(scene.schemeId).colors.bg1}"><svg viewBox="${x} ${y} ${w} ${h}">${recolor(comp.inner, map)}</svg></div>
       <div class="ctitle">${esc(o.title)}${o.custom ? ' <span class="x" title="Удалить из библиотеки">×</span>' : ''}</div>
@@ -295,6 +296,7 @@ async function renderVariants(items) {
 }
 
 function setFormat(W, H) {
+  if (!Number.isFinite(W) || !Number.isFinite(H)) return toast('Укажите корректный размер');
   W = Math.max(200, Math.min(6000, Math.round(W)));
   H = Math.max(200, Math.min(6000, Math.round(H)));
   const old = { W: scene.W, H: scene.H };
@@ -359,9 +361,8 @@ $('#open-json').onchange = async (e) => {
   if (!f) return;
   try {
     const s = JSON.parse(await f.text());
-    if (!Array.isArray(s.items) || !s.W || !s.H) throw new Error();
-    s.items = s.items.filter((i) => lib.get(i.object)).map((i) => ({ ...i, uid: newUid() }));
-    scene = s;
+    scene = validateScene(s);
+    editor.selected = null;
     commit();
   } catch { toast('Не удалось прочитать сцену'); }
   e.target.value = '';
@@ -402,7 +403,7 @@ $('#scheme-save').onclick = () => {
 $('#upload-svg').onchange = async (e) => {
   let n = 0;
   for (const f of e.target.files) {
-    try { lib.addCustom(f.name, await f.text()); n++; } catch { toast(`${f.name}: не SVG`); }
+    try { lib.addCustom(f.name, await f.text()); n++; } catch (err) { toast(`${f.name}: ${err.message}`); }
   }
   if (n) { libKey = ''; refresh(); toast(`Добавлено в библиотеку: ${n}`); }
   e.target.value = '';
@@ -419,7 +420,7 @@ $('#ai-save').onclick = () => {
   if (v && !v.startsWith('•')) setKey(v);
   if (!v) setKey('');
   renderAi();
-  toast(getKey() ? 'Ключ сохранён в этом браузере' : 'Ключ удалён');
+  toast(getKey() ? 'Ключ действует до перезагрузки вкладки' : 'Ключ удалён');
 };
 renderAi();
 
@@ -461,13 +462,23 @@ function toast(msg) {
 function saveScene() {
   try { localStorage.setItem(SCENE_KEY, JSON.stringify(scene)); } catch { /* ignore */ }
 }
+function validateScene(s) {
+  if (!s || !Array.isArray(s.items) || s.items.length > 500 ||
+      ![s.W, s.H].every(v => Number.isInteger(v) && v >= 200 && v <= 6000) ||
+      !Number.isFinite(s.scale) || s.scale <= 0 || s.scale > 100 ||
+      !['L', 'S'].includes(s.size)) throw new Error('Некорректная сцена');
+  const items = s.items.filter(i => i && lib.get(i.object) && ['main','bg'].includes(i.kind) &&
+    [i.cx,i.cy,i.rot ?? 0].every(v => Number.isFinite(v) && Math.abs(v) < 1e7))
+    .map(i => ({ uid: newUid(), object: i.object, kind: i.kind, cx: i.cx, cy: i.cy, rot: i.rot ?? 0 }));
+  return { W: s.W, H: s.H, scale: s.scale, size: s.size,
+    schemeId: palettes.get(s.schemeId).id, style: Object.hasOwn(STYLES, s.style) ? s.style : 'assembled',
+    seed: Number.isSafeInteger(s.seed) ? s.seed : 1, items };
+}
 function loadScene() {
   try {
     const s = JSON.parse(localStorage.getItem(SCENE_KEY));
     if (s && Array.isArray(s.items)) {
-      s.items = s.items.filter((i) => lib.get(i.object));
-      if (!palettes.schemes.some((p) => p.id === s.schemeId)) s.schemeId = 'violet';
-      return s;
+      return validateScene(s);
     }
   } catch { /* ignore */ }
   return null;

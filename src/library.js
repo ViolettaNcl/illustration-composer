@@ -7,6 +7,8 @@
 // inner markup is reused verbatim in every composition (only fill colours are
 // remapped by palette.js), so geometry is never altered.
 
+import { sanitizeSVG } from './safe-svg.js';
+
 const BASE = import.meta.env.BASE_URL + 'library/';
 const CUSTOM_KEY = 'ic.customComponents.v1';
 
@@ -69,6 +71,7 @@ export class Library {
   }
 
   addCustom(name, markup) {
+    markup = sanitizeSVG(markup);
     const comp = parseComponent(markup);
     const id = 'custom-' + Date.now().toString(36);
     const v = { file: null, markup, w: comp.vb[2], h: comp.vb[3] };
@@ -110,7 +113,20 @@ export function parseComponent(text) {
 
 function loadCustom() {
   try {
-    return JSON.parse(localStorage.getItem(CUSTOM_KEY) || '[]');
+    const saved = JSON.parse(localStorage.getItem(CUSTOM_KEY) || '[]');
+    if (!Array.isArray(saved)) return [];
+    return saved.flatMap(o => {
+      try {
+        if (!/^custom-[a-z0-9-]+$/.test(o.id)) return [];
+        const markup = sanitizeSVG(o.variants.main_L.markup);
+        const { vb } = parseComponent(markup);
+        const v = { file: null, markup, w: vb[2], h: vb[3] };
+        return [{ id: o.id, title: String(o.title), titleEn: String(o.titleEn || o.title), custom: true,
+          keywords: Array.isArray(o.keywords) ? o.keywords.filter(k => typeof k === 'string') : [],
+          meaning: 'загруженный пользователем компонент', weight: 0.6,
+          variants: { main_L: v, bg_L: v, main_S: v, bg_S: v } }];
+      } catch { return []; }
+    });
   } catch {
     return [];
   }

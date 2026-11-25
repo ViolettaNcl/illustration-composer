@@ -2,18 +2,20 @@
 // catalogue. The model never generates graphics — it only returns ids that exist in
 // the library (enforced by an enum in the JSON schema and re-validated here).
 //
-// The key is entered by the user in the UI and kept in localStorage of their browser;
+// The optional key is kept in memory only until reload or tab closure;
 // requests go straight from the browser to api.anthropic.com.
 
 
-const KEY_STORE = 'ic.anthropicKey';
+let sessionKey = '';
+// Remove credentials stored by earlier releases; never persist new credentials.
+try { localStorage.removeItem('ic.anthropicKey'); } catch { /* storage blocked */ }
 export const MODEL = 'claude-opus-5-5';
 
 export function getKey() {
-  try { return localStorage.getItem(KEY_STORE) || ''; } catch { return ''; }
+  return sessionKey;
 }
 export function setKey(k) {
-  try { k ? localStorage.setItem(KEY_STORE, k.trim()) : localStorage.removeItem(KEY_STORE); } catch { /* ignore */ }
+  sessionKey = typeof k === 'string' ? k.trim() : '';
 }
 
 export async function aiFromMetaphor(text, library, { background = 'auto' } = {}) {
