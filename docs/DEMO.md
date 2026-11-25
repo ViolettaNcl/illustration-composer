@@ -24,4 +24,4 @@ npx playwright install chromium
 npm run test:browser
 ```
 
-GitHub Actions запускает проверки перед публикацией. Этот документ — сценарий демонстрации, не видеозапись; открытие в Figma требует ручной проверки.
+GitHub Actions запускает проверки перед публикацией. Запись автоматической браузерной демонстрации (.webm) сохраняется как артефакт `browser-demo` в [GitHub Actions](https://github.com/ViolettaNcl/illustration-composer/actions) после выполнения браузерного теста. Этот документ также можно использовать для ручной демонстрации; открытие в Figma требует ручной проверки.

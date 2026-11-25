@@ -10,20 +10,26 @@ test('fresh browser: compose, edit, recolor, export, SVG safety', {timeout:90000
     const url='http://127.0.0.1:4173/';
     for(let i=0;i<60;i++){try{if((await fetch(url)).ok)break;}catch{} await new Promise(r=>setTimeout(r,250));}
     browser=await chromium.launch({headless:true});
-    const page=await browser.newPage({viewport:{width:1440,height:960}});
+    const context=await browser.newContext({viewport:{width:1440,height:960},recordVideo:{dir:'artifacts/demo',size:{width:1440,height:960}}});
+    const page=await context.newPage();
+    const show=()=>page.waitForTimeout(1100);
     const errors=[]; page.on('pageerror',e=>errors.push(e.message));
     await page.goto(url);
     await page.waitForFunction(()=>window.__composer?.scene.items.length>0);
+    await show();
     await page.locator('#mode [data-mode=names]').click();
     await page.locator('#prompt').fill('книга, телефон, 2 монеты, фоновые наушники');
     await page.locator('#build').click();
     await page.waitForFunction(()=>window.__composer.scene.items.length===5);
+    await show();
     const scene=()=>page.evaluate(()=>JSON.parse(JSON.stringify(window.__composer.scene)));
     await page.locator('#layers li').first().click();
     await page.locator('#selbar [data-act=rotr]').click();
     assert.equal((await scene()).items.at(-1).rot,15);
+    await show();
     await page.locator('#selbar [data-act=dup]').click();
     assert.equal((await scene()).items.length,6);
+    await show();
     const uid=(await scene()).items.at(-1).uid;
     await page.locator('#selbar [data-act=down]').click();
     assert.equal((await scene()).items.at(-2).uid,uid);
@@ -42,6 +48,8 @@ test('fresh browser: compose, edit, recolor, export, SVG safety', {timeout:90000
     assert.equal((await scene()).size,'S');
     await page.locator('#upload-palette').setInputFiles('examples/palettes/sunset.json');
     await page.waitForFunction(()=>window.__composer.scene.schemeId!=='violet');
+    assert.equal(await page.locator('#ed-bg').getAttribute('fill'),'#FFE1D6');
+    await show();
     const downloadPromise=page.waitForEvent('download');
     await page.locator('#export').click();
     const download=await downloadPromise;
@@ -61,5 +69,6 @@ test('fresh browser: compose, edit, recolor, export, SVG safety', {timeout:90000
     assert.doesNotMatch(result.markup,/onclick/); assert.equal(result.rejected,3);
     assert.equal(await page.evaluate(()=>localStorage.getItem('ic.anthropicKey')),null);
     assert.deepEqual(errors,[]);
+    await context.close();
   } finally { await browser?.close(); server.kill(); }
 });
